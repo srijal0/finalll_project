@@ -18,7 +18,6 @@ interface OrderSnapshot {
 export default function OrderConfirmationPage() {
   const router = useRouter();
   const cart = useCart();
-  const [showDetails, setShowDetails] = useState(false);
 
   // Capture cart contents the moment this page mounts, before we clear it below.
   const [order] = useState<OrderSnapshot | null>(() => {
@@ -31,6 +30,17 @@ export default function OrderConfirmationPage() {
       date: new Date(),
     };
   });
+
+  useEffect(() => {
+    if (order) {
+      try {
+        localStorage.setItem("ecohaven_last_order", JSON.stringify(order));
+      } catch {
+        // ignore storage errors
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order]);
 
   useEffect(() => {
     cart.clearCart();
@@ -135,19 +145,6 @@ export default function OrderConfirmationPage() {
           flex-shrink: 0;
         }
 
-        .oc-details {
-          padding: 16px 24px;
-          border-bottom: 1px solid #ececE4;
-          font-size: 13px;
-          color: #555;
-        }
-        .oc-details-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-        }
-        .oc-details-row:last-child { margin-bottom: 0; font-weight: 700; color: #1a1a1a; }
-
         .oc-show-details {
           padding: 16px 24px 22px;
           display: flex;
@@ -240,32 +237,15 @@ export default function OrderConfirmationPage() {
                 </div>
               ))}
 
-              {showDetails && (
-                <div className="oc-details">
-                  <div className="oc-details-row">
-                    <span>Item(s) total</span>
-                    <span>Rs {order.subtotal}</span>
-                  </div>
-                  <div className="oc-details-row">
-                    <span>Delivery fee</span>
-                    <span>Rs {DELIVERY_FEE}</span>
-                  </div>
-                  <div className="oc-details-row">
-                    <span>Total paid</span>
-                    <span>Rs {order.total}</span>
-                  </div>
-                </div>
-              )}
-
               <div className="oc-show-details">
-                <button className="oc-show-btn" onClick={() => setShowDetails((v) => !v)}>
+                <button className="oc-show-btn" onClick={() => router.push("/track-order")}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                     <path d="M14 2v6h6" />
                     <line x1="8" y1="13" x2="16" y2="13" />
                     <line x1="8" y1="17" x2="16" y2="17" />
                   </svg>
-                  {showDetails ? "Hide details" : "Show details"}
+                  Show details
                 </button>
               </div>
             </div>
