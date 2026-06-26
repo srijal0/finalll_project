@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/auth-context";
+import { useCart } from "../context/cart-context";
 
 interface HeaderProps {
   activePage?: string;
@@ -9,6 +11,8 @@ interface HeaderProps {
 export default function Header({ activePage = "Home" }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
+  const { itemCount } = useCart();
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -98,8 +102,38 @@ export default function Header({ activePage = "Home" }: HeaderProps) {
           padding: 4px;
           display: flex;
           align-items: center;
+          position: relative;
         }
         .icon-btn:hover { color: #2d4a2d; }
+        .cart-badge {
+          position: absolute;
+          top: -4px;
+          right: -6px;
+          background: #2d4a2d;
+          color: #fff;
+          font-size: 9px;
+          font-weight: 700;
+          border-radius: 10px;
+          min-width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 3px;
+        }
+        .account-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #444;
+          font-size: 13px;
+          font-weight: 600;
+          padding: 4px;
+        }
+        .account-btn:hover { color: #2d4a2d; }
         .hamburger {
           display: none;
           background: none;
@@ -144,7 +178,6 @@ export default function Header({ activePage = "Home" }: HeaderProps) {
         </ul>
 
         <div className="header-right">
-          {/* Clicking search bar OR the icon navigates to /search */}
           <div
             className="search-bar"
             onClick={() => router.push("/search")}
@@ -168,19 +201,28 @@ export default function Header({ activePage = "Home" }: HeaderProps) {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </button>
-          <button className="icon-btn" aria-label="Cart">
+
+          <button className="icon-btn" aria-label="Cart" onClick={() => router.push("/cart")}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>
               <path d="M16 10a4 4 0 0 1-8 0"/>
             </svg>
+            {itemCount > 0 && <span className="cart-badge">{itemCount}</span>}
           </button>
-          <button className="icon-btn" aria-label="Account">
+
+          <button
+            className="account-btn"
+            onClick={() => router.push(user ? "/account" : "/login")}
+            aria-label="Account"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
             </svg>
+            {user ? user.name.split(" ")[0] : "Sign In"}
           </button>
+
           <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
         </div>
       </header>

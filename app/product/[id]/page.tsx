@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Header from "../../components/header";
 import { getProductById } from "../../data/products";
 import { useAuth } from "../../context/auth-context";
+import { useCart } from "../../context/cart-context";
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -18,6 +19,7 @@ export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { addItem } = useCart();
   const id = params?.id as string;
   const product = getProductById(id);
 
@@ -25,7 +27,6 @@ export default function ProductPage() {
   const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] ?? "");
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
-  const [added, setAdded] = useState(false);
 
   if (!product) {
     return (
@@ -54,12 +55,23 @@ export default function ProductPage() {
   }
 
   const handleAddToCart = () => {
+    addItem(
+      {
+        id: product.id,
+        name: product.name,
+        img: product.img,
+        priceValue: product.priceValue,
+        selectedType,
+        selectedColor,
+      },
+      quantity
+    );
+
     if (!user) {
-      router.push(`/login?redirect=/product/${product.id}`);
+      router.push("/login?redirect=/cart");
       return;
     }
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1800);
+    router.push("/cart");
   };
 
   return (
@@ -237,7 +249,6 @@ export default function ProductPage() {
           transition: background 0.15s;
         }
         .pd-add-btn:hover { background: #16291a; }
-        .pd-add-btn.added { background: #4a7c59; }
 
         .pd-description {
           margin-top: 30px;
@@ -342,8 +353,8 @@ export default function ProductPage() {
               </div>
             )}
 
-            <button className={`pd-add-btn${added ? " added" : ""}`} onClick={handleAddToCart}>
-              {added ? "Added to Cart ✓" : "Add to Cart"}
+            <button className="pd-add-btn" onClick={handleAddToCart}>
+              Add to Cart
             </button>
 
             <p className="pd-description">{product.description}</p>
