@@ -373,7 +373,9 @@ export default function CartPage() {
                 <span>Rs{total}</span>
               </div>
 
-              <button className="checkout-btn">Check out →</button>
+              <button className="checkout-btn" onClick={() => router.push("/checkout")}>
+                Check out →
+              </button>
 
               <div className="order-trust">
                 <span>🛡️ Secure Transaction</span>
