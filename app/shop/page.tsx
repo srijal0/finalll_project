@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "../components/header";
+import { allProducts } from "../data/products";
 
 const categories = [
   { label: "Clothing", icon: "👕" },
@@ -14,93 +16,6 @@ const sustainableFilters = ["Organic Material", "Fair Trade Cert", "Recycled Pac
 
 const sortOptions = ["Trending", "Price: Low to High", "Price: High to Low", "Newest", "Top Rated"];
 
-const allProducts = [
-  {
-    name: "Organic Cotton Tee",
-    price: "Rs300",
-    rating: 4.9,
-    reviews: 124,
-    img: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80",
-    badge: "ORGANIC",
-    badgeColor: "#4a7c59",
-    category: "Clothing",
-  },
-  {
-    name: "Linen Bedding Set",
-    price: "Rs350",
-    rating: 5.0,
-    reviews: 88,
-    img: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80",
-    badge: "",
-    category: "Bedding",
-  },
-  {
-    name: "Bamboo Brush",
-    price: "Rs300",
-    rating: 4.7,
-    reviews: 42,
-    img: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=400&q=80",
-    badge: "",
-    category: "Accessories",
-  },
-  {
-    name: "Modern Ceramic Vase",
-    price: "Rs250",
-    rating: 4.8,
-    reviews: 210,
-    img: "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=400&q=80",
-    badge: "BESTSELLER",
-    badgeColor: "#888",
-    category: "Home Goods",
-  },
-  {
-    name: "Recycled Wool Slippers",
-    price: "Rs450",
-    rating: 4.9,
-    reviews: 56,
-    img: "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400&q=80",
-    badge: "",
-    category: "Clothing",
-  },
-  {
-    name: "Teak Serving Board",
-    price: "Rs220",
-    rating: 4.6,
-    reviews: 34,
-    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
-    badge: "",
-    category: "Home Goods",
-  },
-  {
-    name: "Hemp Throw Blanket",
-    price: "Rs380",
-    rating: 4.8,
-    reviews: 67,
-    img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80",
-    badge: "ORGANIC",
-    badgeColor: "#4a7c59",
-    category: "Bedding",
-  },
-  {
-    name: "Rattan Side Table",
-    price: "Rs620",
-    rating: 4.7,
-    reviews: 29,
-    img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80",
-    badge: "",
-    category: "Furniture",
-  },
-  {
-    name: "Beeswax Candle Set",
-    price: "Rs160",
-    rating: 5.0,
-    reviews: 91,
-    img: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&q=80",
-    badge: "",
-    category: "Home Goods",
-  },
-];
-
 function Stars({ rating }: { rating: number }) {
   return (
     <span style={{ color: "#c8a84b", fontSize: 13 }}>
@@ -111,12 +26,13 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export default function ShopPage() {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("Clothing");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [sort, setSort] = useState("Trending");
   const [sortOpen, setSortOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
 
   const toggleFilter = (f: string) => {
     setActiveFilters(prev =>
@@ -124,8 +40,9 @@ export default function ShopPage() {
     );
   };
 
-  const toggleWishlist = (i: number) => {
-    setWishlist(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+  const toggleWishlist = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   const filtered = allProducts.filter(p => p.category === activeCategory);
@@ -416,8 +333,8 @@ export default function ShopPage() {
           </div>
 
           <div className="product-grid">
-            {filtered.length > 0 ? filtered.map((p, i) => (
-              <div key={i} className="prod-card">
+            {filtered.length > 0 ? filtered.map((p) => (
+              <div key={p.id} className="prod-card" onClick={() => router.push(`/product/${p.id}`)}>
                 <div className="prod-img-wrap">
                   <img className="prod-img" src={p.img} alt={p.name} />
                   {p.badge && (
@@ -426,11 +343,11 @@ export default function ShopPage() {
                     </span>
                   )}
                   <button
-                    className={`wish-btn${wishlist.includes(i) ? " active" : ""}`}
-                    onClick={() => toggleWishlist(i)}
+                    className={`wish-btn${wishlist.includes(p.id) ? " active" : ""}`}
+                    onClick={(e) => toggleWishlist(p.id, e)}
                     aria-label="Wishlist"
                   >
-                    {wishlist.includes(i) ? "❤️" : "🤍"}
+                    {wishlist.includes(p.id) ? "❤️" : "🤍"}
                   </button>
                 </div>
                 <div className="prod-info">

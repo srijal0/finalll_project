@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Header from "../../components/header";
 import { getProductById } from "../../data/products";
+import { useAuth } from "../../context/auth-context";
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -16,6 +17,7 @@ function Stars({ rating }: { rating: number }) {
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const id = params?.id as string;
   const product = getProductById(id);
 
@@ -52,6 +54,10 @@ export default function ProductPage() {
   }
 
   const handleAddToCart = () => {
+    if (!user) {
+      router.push(`/login?redirect=/product/${product.id}`);
+      return;
+    }
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
   };
