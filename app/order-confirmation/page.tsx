@@ -1,88 +1,280 @@
 "use client";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Header from "../components/header";
-import { useCart } from "../context/cart-context";
+import { useCart, CartItem } from "../context/cart-context";
+
+const DELIVERY_FEE = 180;
+const STORE_NAME = "EcoHaven";
+
+interface OrderSnapshot {
+  items: CartItem[];
+  subtotal: number;
+  total: number;
+  orderNumber: number;
+  date: Date;
+}
 
 export default function OrderConfirmationPage() {
   const router = useRouter();
-  const { clearCart } = useCart();
+  const cart = useCart();
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Capture cart contents the moment this page mounts, before we clear it below.
+  const [order] = useState<OrderSnapshot | null>(() => {
+    if (cart.items.length === 0) return null;
+    return {
+      items: cart.items,
+      subtotal: cart.subtotal,
+      total: cart.subtotal + DELIVERY_FEE,
+      orderNumber: Math.floor(10000 + Math.random() * 90000),
+      date: new Date(),
+    };
+  });
 
   useEffect(() => {
-    clearCart();
+    cart.clearCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const formattedDate = order?.date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
   return (
     <>
       <style>{`
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f3ef; color: #2d2d2d; }
+
         .oc-wrap {
-          min-height: calc(100vh - 60px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 24px;
-        }
-        .oc-card {
-          background: #fff;
-          border-radius: 16px;
-          padding: 48px 40px;
+          max-width: 700px;
+          margin: 0 auto;
+          padding: 60px 24px 80px;
           text-align: center;
-          max-width: 420px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.06);
         }
         .oc-icon {
           width: 64px; height: 64px;
           border-radius: 50%;
-          background: #e8f4ec;
-          color: #2d4a2d;
-          font-size: 30px;
+          background: #1f3b22;
+          color: #fff;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0 auto 20px;
+          margin: 0 auto 24px;
         }
-        .oc-title { font-size: 20px; font-weight: 800; color: #1a1a1a; margin-bottom: 8px; }
-        .oc-sub { font-size: 13px; color: #888; margin-bottom: 28px; line-height: 1.6; }
-        .oc-note {
-          background: #f7f6f1;
-          border-radius: 10px;
-          padding: 12px 16px;
+        .oc-title {
+          font-size: 26px;
+          font-weight: 800;
+          color: #1a1a1a;
+          margin-bottom: 10px;
+        }
+        .oc-sub {
+          font-size: 14px;
+          color: #777;
+          line-height: 1.6;
+          margin-bottom: 32px;
+        }
+
+        .oc-card {
+          background: #fff;
+          border-radius: 16px;
+          border: 1px solid #ececE4;
+          text-align: left;
+          overflow: hidden;
+        }
+        .oc-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .oc-grid-cell {
+          padding: 18px 24px;
+          border-bottom: 1px solid #ececE4;
+        }
+        .oc-grid-cell:nth-child(odd) { border-right: 1px solid #ececE4; }
+        .oc-label {
+          font-size: 11px;
+          color: #999;
+          margin-bottom: 4px;
+        }
+        .oc-value {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1a1a1a;
+        }
+
+        .oc-item-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 18px 24px;
+          border-bottom: 1px solid #ececE4;
+        }
+        .oc-item-img {
+          width: 48px; height: 48px;
+          border-radius: 8px;
+          object-fit: cover;
+          background: #f4f3ef;
+          flex-shrink: 0;
+        }
+        .oc-item-name {
+          font-size: 13px;
+          font-weight: 700;
+          color: #1a1a1a;
+        }
+        .oc-item-sub {
           font-size: 12px;
           color: #999;
-          margin-bottom: 24px;
         }
-        .oc-btn {
+        .oc-item-price {
+          font-size: 13px;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-left: auto;
+          flex-shrink: 0;
+        }
+
+        .oc-details {
+          padding: 16px 24px;
+          border-bottom: 1px solid #ececE4;
+          font-size: 13px;
+          color: #555;
+        }
+        .oc-details-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        .oc-details-row:last-child { margin-bottom: 0; font-weight: 700; color: #1a1a1a; }
+
+        .oc-show-details {
+          padding: 16px 24px 22px;
+          display: flex;
+          justify-content: center;
+        }
+        .oc-show-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
           background: #1f3b22;
           color: #fff;
           border: none;
-          border-radius: 10px;
-          padding: 13px 24px;
+          border-radius: 999px;
+          padding: 10px 20px;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
-          width: 100%;
         }
-        .oc-btn:hover { background: #16291a; }
+        .oc-show-btn:hover { background: #16291a; }
+
+        .oc-continue {
+          margin-top: 24px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #1a1a1a;
+          text-decoration: underline;
+          background: none;
+          border: none;
+          cursor: pointer;
+        }
+        .oc-continue:hover { color: #1f3b22; }
+
+        .oc-empty { font-size: 14px; color: #777; }
       `}</style>
 
       <Header activePage="Shop" />
 
       <div className="oc-wrap">
-        <div className="oc-card">
-          <div className="oc-icon">✓</div>
-          <div className="oc-title">Payment isn&apos;t set up yet</div>
-          <p className="oc-sub">
-            This is a placeholder confirmation page — no real payment was processed. Once a payment
-            provider is connected, this is where the order confirmation would appear.
-          </p>
-          <div className="oc-note">Your cart has been cleared for this demo run.</div>
-          <button className="oc-btn" onClick={() => router.push("/shop")}>
-            Continue Shopping
-          </button>
-        </div>
+        {!order ? (
+          <>
+            <p className="oc-empty">We couldn&apos;t find a recent order to confirm.</p>
+            <button className="oc-continue" onClick={() => router.push("/shop")}>
+              Continue Shopping
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="oc-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="4 12 9 17 20 6" />
+              </svg>
+            </div>
+            <h1 className="oc-title">Your order is Confirmed</h1>
+            <p className="oc-sub">
+              {STORE_NAME} has accepted your order, and they are getting it ready.
+            </p>
+
+            <div className="oc-card">
+              <div className="oc-grid">
+                <div className="oc-grid-cell">
+                  <div className="oc-label">Store</div>
+                  <div className="oc-value">{STORE_NAME}</div>
+                </div>
+                <div className="oc-grid-cell">
+                  <div className="oc-label">Order Number</div>
+                  <div className="oc-value">Order {order.orderNumber}</div>
+                </div>
+                <div className="oc-grid-cell">
+                  <div className="oc-label">Order total</div>
+                  <div className="oc-value">Rs {order.total}</div>
+                </div>
+                <div className="oc-grid-cell">
+                  <div className="oc-label">Order date</div>
+                  <div className="oc-value">{formattedDate}</div>
+                </div>
+              </div>
+
+              {order.items.map((item) => (
+                <div className="oc-item-row" key={`${item.id}-${item.selectedType}-${item.selectedColor}`}>
+                  <img className="oc-item-img" src={item.img} alt={item.name} />
+                  <div>
+                    <div className="oc-item-name">{item.name}</div>
+                    {(item.selectedType || item.selectedColor) && (
+                      <div className="oc-item-sub">
+                        {[item.selectedType, item.selectedColor].filter(Boolean).join(" / ")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="oc-item-price">Rs {item.priceValue * item.quantity}</div>
+                </div>
+              ))}
+
+              {showDetails && (
+                <div className="oc-details">
+                  <div className="oc-details-row">
+                    <span>Item(s) total</span>
+                    <span>Rs {order.subtotal}</span>
+                  </div>
+                  <div className="oc-details-row">
+                    <span>Delivery fee</span>
+                    <span>Rs {DELIVERY_FEE}</span>
+                  </div>
+                  <div className="oc-details-row">
+                    <span>Total paid</span>
+                    <span>Rs {order.total}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="oc-show-details">
+                <button className="oc-show-btn" onClick={() => setShowDetails((v) => !v)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <line x1="8" y1="13" x2="16" y2="13" />
+                    <line x1="8" y1="17" x2="16" y2="17" />
+                  </svg>
+                  {showDetails ? "Hide details" : "Show details"}
+                </button>
+              </div>
+            </div>
+
+            <button className="oc-continue" onClick={() => router.push("/shop")}>
+              Continue Shopping
+            </button>
+          </>
+        )}
       </div>
     </>
   );
