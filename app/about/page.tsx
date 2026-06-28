@@ -182,7 +182,7 @@ export default function AboutPage() {
         </div>
         <img
           className="ab-hero-img"
-          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80"
+          src="/images/image1.png"
           alt="EcoHaven story"
         />
       </section>

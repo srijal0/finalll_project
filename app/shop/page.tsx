@@ -1,19 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../components/header";
-import { allProducts } from "../data/products";
+import { productAPI } from "../lib/api";
 
 const categories = [
-  { label: "Clothing", icon: "👕" },
-  { label: "Bedding", icon: "🛏️" },
-  { label: "Accessories", icon: "👜" },
-  { label: "Furniture", icon: "🪑" },
+  { label: "Clothing",   icon: "👕" },
+  { label: "Bedding",    icon: "🛏️" },
+  { label: "Accessories",icon: "👜" },
+  { label: "Furniture",  icon: "🪑" },
   { label: "Home Goods", icon: "🏠" },
 ];
 
 const sustainableFilters = ["Organic Material", "Fair Trade Cert", "Recycled Packaging"];
-
 const sortOptions = ["Trending", "Price: Low to High", "Price: High to Low", "Newest", "Top Rated"];
 
 function Stars({ rating }: { rating: number }) {
@@ -34,235 +33,88 @@ export default function ShopPage() {
   const [page, setPage] = useState(1);
   const [wishlist, setWishlist] = useState<string[]>([]);
 
+  // ── NEW: real products from MongoDB ──
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch products whenever category or sort changes
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    productAPI
+      .getAll({ category: activeCategory, sort })
+      .then((res) => setProducts(res.products))
+      .catch(() => setError("Failed to load products. Is your backend running?"))
+      .finally(() => setLoading(false));
+  }, [activeCategory, sort]);
+
   const toggleFilter = (f: string) => {
-    setActiveFilters(prev =>
-      prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
+    setActiveFilters((prev) =>
+      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]
     );
   };
 
   const toggleWishlist = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setWishlist((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
-
-  const filtered = allProducts.filter(p => p.category === activeCategory);
 
   return (
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f3ef; color: #2d2d2d; }
-
-        .shop-layout {
-          display: flex;
-          gap: 0;
-          min-height: calc(100vh - 60px);
-        }
-
-        .sidebar {
-          width: 220px;
-          flex-shrink: 0;
-          background: #fff;
-          padding: 28px 20px;
-          border-right: 1px solid #ebebeb;
-        }
-        .sidebar-title {
-          font-size: 16px;
-          font-weight: 800;
-          color: #1a1a1a;
-          margin-bottom: 18px;
-        }
+        .shop-layout { display: flex; gap: 0; min-height: calc(100vh - 60px); }
+        .sidebar { width: 220px; flex-shrink: 0; background: #fff; padding: 28px 20px; border-right: 1px solid #ebebeb; }
+        .sidebar-title { font-size: 16px; font-weight: 800; color: #1a1a1a; margin-bottom: 18px; }
         .cat-list { list-style: none; margin-bottom: 32px; }
-        .cat-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 9px 12px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 13px;
-          color: #555;
-          font-weight: 500;
-          transition: background 0.15s, color 0.15s;
-          margin-bottom: 2px;
-        }
+        .cat-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #555; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 2px; }
         .cat-item:hover { background: #f0f7f2; color: #2d4a2d; }
         .cat-item.active { background: #e8f4ec; color: #2d4a2d; font-weight: 700; }
         .cat-icon { font-size: 15px; width: 20px; text-align: center; }
-
-        .filter-title {
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 1.5px;
-          color: #aaa;
-          text-transform: uppercase;
-          margin-bottom: 14px;
-        }
+        .filter-title { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: #aaa; text-transform: uppercase; margin-bottom: 14px; }
         .filter-list { list-style: none; }
-        .filter-item {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          margin-bottom: 12px;
-          cursor: pointer;
-        }
-        .filter-item input[type="checkbox"] {
-          width: 15px; height: 15px;
-          accent-color: #2d4a2d;
-          cursor: pointer;
-        }
-        .filter-item label {
-          font-size: 12px;
-          color: #555;
-          cursor: pointer;
-        }
-
-        .shop-main {
-          flex: 1;
-          padding: 32px 40px;
-        }
-        .shop-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 28px;
-        }
-        .shop-title {
-          font-size: 26px;
-          font-weight: 800;
-          color: #1a1a1a;
-          margin-bottom: 4px;
-        }
+        .filter-item { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; cursor: pointer; }
+        .filter-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: #2d4a2d; cursor: pointer; }
+        .filter-item label { font-size: 12px; color: #555; cursor: pointer; }
+        .shop-main { flex: 1; padding: 32px 40px; }
+        .shop-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+        .shop-title { font-size: 26px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
         .shop-sub { font-size: 13px; color: #888; }
-
         .sort-wrap { position: relative; }
-        .sort-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #fff;
-          border: 1px solid #e0e0e0;
-          border-radius: 6px;
-          padding: 8px 14px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #444;
-          cursor: pointer;
-          white-space: nowrap;
-        }
+        .sort-btn { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 600; color: #444; cursor: pointer; white-space: nowrap; }
         .sort-btn:hover { border-color: #2d4a2d; }
         .sort-label { color: #aaa; font-weight: 400; margin-right: 4px; }
-        .sort-dropdown {
-          position: absolute;
-          right: 0;
-          top: calc(100% + 6px);
-          background: #fff;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-          min-width: 180px;
-          z-index: 50;
-          overflow: hidden;
-        }
-        .sort-option {
-          padding: 10px 16px;
-          font-size: 12px;
-          cursor: pointer;
-          color: #555;
-          transition: background 0.15s;
-        }
+        .sort-dropdown { position: absolute; right: 0; top: calc(100% + 6px); background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 180px; z-index: 50; overflow: hidden; }
+        .sort-option { padding: 10px 16px; font-size: 12px; cursor: pointer; color: #555; transition: background 0.15s; }
         .sort-option:hover { background: #f0f7f2; color: #2d4a2d; }
         .sort-option.active { color: #2d4a2d; font-weight: 700; }
-
-        .product-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 18px;
-          margin-bottom: 36px;
-        }
-        .prod-card {
-          background: #fff;
-          border-radius: 10px;
-          overflow: hidden;
-          transition: box-shadow 0.2s;
-          cursor: pointer;
-        }
+        .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 36px; }
+        .prod-card { background: #fff; border-radius: 10px; overflow: hidden; transition: box-shadow 0.2s; cursor: pointer; }
         .prod-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
         .prod-img-wrap { position: relative; overflow: hidden; }
-        .prod-img {
-          width: 100%;
-          height: 200px;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.35s;
-        }
+        .prod-img { width: 100%; height: 200px; object-fit: cover; display: block; transition: transform 0.35s; }
         .prod-card:hover .prod-img { transform: scale(1.04); }
-        .prod-badge {
-          position: absolute;
-          bottom: 10px;
-          left: 10px;
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 1px;
-          padding: 3px 8px;
-          border-radius: 3px;
-          color: #fff;
-          text-transform: uppercase;
-        }
-        .wish-btn {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.92);
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 15px;
-          transition: transform 0.2s;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-        }
+        .prod-badge { position: absolute; bottom: 10px; left: 10px; font-size: 9px; font-weight: 800; letter-spacing: 1px; padding: 3px 8px; border-radius: 3px; color: #fff; text-transform: uppercase; background: #4a7c59; }
+        .wish-btn { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .wish-btn:hover { transform: scale(1.1); }
         .wish-btn.active { color: #e05252; }
         .prod-info { padding: 12px 14px 16px; }
-        .prod-rating {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin-bottom: 4px;
-        }
+        .prod-rating { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
         .prod-reviews { font-size: 11px; color: #aaa; }
         .prod-name { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 5px; }
         .prod-price { font-size: 15px; font-weight: 700; color: #2d4a2d; }
-
-        .pagination {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 6px;
-        }
-        .pg-btn {
-          width: 34px; height: 34px;
-          border-radius: 50%;
-          border: 1px solid #e0e0e0;
-          background: #fff;
-          font-size: 13px;
-          font-weight: 600;
-          color: #555;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.15s, color 0.15s;
-        }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .pg-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e0e0e0; background: #fff; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
         .pg-btn:hover { border-color: #2d4a2d; color: #2d4a2d; }
         .pg-btn.active { background: #2d4a2d; color: #fff; border-color: #2d4a2d; }
         .pg-btn.arrow { font-size: 16px; }
         .pg-dots { color: #aaa; font-size: 13px; padding: 0 4px; }
-
+        .loading { text-align: center; padding: 60px 0; color: #888; font-size: 14px; }
+        .error-msg { text-align: center; padding: 60px 0; color: #b3382c; font-size: 14px; background: #fdecec; border-radius: 10px; }
         @media (max-width: 900px) {
           .sidebar { display: none; }
           .shop-main { padding: 24px 16px; }
@@ -276,21 +128,20 @@ export default function ShopPage() {
         <aside className="sidebar">
           <h2 className="sidebar-title">Categories</h2>
           <ul className="cat-list">
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <li
                 key={cat.label}
                 className={`cat-item${activeCategory === cat.label ? " active" : ""}`}
-                onClick={() => setActiveCategory(cat.label)}
+                onClick={() => { setActiveCategory(cat.label); setPage(1); }}
               >
                 <span className="cat-icon">{cat.icon}</span>
                 {cat.label}
               </li>
             ))}
           </ul>
-
           <p className="filter-title">Sustainable Filters</p>
           <ul className="filter-list">
-            {sustainableFilters.map(f => (
+            {sustainableFilters.map((f) => (
               <li key={f} className="filter-item">
                 <input
                   type="checkbox"
@@ -311,14 +162,14 @@ export default function ShopPage() {
               <p className="shop-sub">Curated products for a conscious lifestyle.</p>
             </div>
             <div className="sort-wrap">
-              <button className="sort-btn" onClick={() => setSortOpen(o => !o)}>
+              <button className="sort-btn" onClick={() => setSortOpen((o) => !o)}>
                 <span className="sort-label">Sort by:</span>
                 {sort}
                 <span>▾</span>
               </button>
               {sortOpen && (
                 <div className="sort-dropdown">
-                  {sortOptions.map(o => (
+                  {sortOptions.map((o) => (
                     <div
                       key={o}
                       className={`sort-option${sort === o ? " active" : ""}`}
@@ -332,60 +183,84 @@ export default function ShopPage() {
             </div>
           </div>
 
-          <div className="product-grid">
-            {filtered.length > 0 ? filtered.map((p) => (
-              <div key={p.id} className="prod-card" onClick={() => router.push(`/product/${p.id}`)}>
-                <div className="prod-img-wrap">
-                  <img className="prod-img" src={p.img} alt={p.name} />
-                  {p.badge && (
-                    <span className="prod-badge" style={{ background: p.badgeColor }}>
-                      {p.badge}
-                    </span>
-                  )}
-                  <button
-                    className={`wish-btn${wishlist.includes(p.id) ? " active" : ""}`}
-                    onClick={(e) => toggleWishlist(p.id, e)}
-                    aria-label="Wishlist"
-                  >
-                    {wishlist.includes(p.id) ? "❤️" : "🤍"}
-                  </button>
-                </div>
-                <div className="prod-info">
-                  <div className="prod-rating">
-                    <Stars rating={p.rating} />
-                    <span className="prod-reviews">{p.rating} ({p.reviews} reviews)</span>
-                  </div>
-                  <div className="prod-name">{p.name}</div>
-                  <div className="prod-price">{p.price}</div>
-                </div>
-              </div>
-            )) : (
-              <div style={{ gridColumn: "span 3", textAlign: "center", padding: "60px 0", color: "#aaa", fontSize: 14 }}>
-                No products found in this category yet.
-              </div>
-            )}
-          </div>
+          {/* ── LOADING STATE ── */}
+          {loading && (
+            <div className="loading">Loading products...</div>
+          )}
 
-          <div className="pagination">
-            <button className="pg-btn arrow" onClick={() => setPage(p => Math.max(1, p - 1))}>‹</button>
-            {[1, 2, 3].map(n => (
+          {/* ── ERROR STATE ── */}
+          {error && (
+            <div className="error-msg">⚠️ {error}</div>
+          )}
+
+          {/* ── PRODUCTS GRID ── */}
+          {!loading && !error && (
+            <div className="product-grid">
+              {products.length > 0 ? products.map((p) => (
+                <div
+                  key={p._id}
+                  className="prod-card"
+                  onClick={() => router.push(`/product/${p._id}`)}
+                >
+                  <div className="prod-img-wrap">
+                    <img
+                      className="prod-img"
+                      src={p.images?.[0] || "/images/image1.png"}
+                      alt={p.name}
+                    />
+                    {p.badge && (
+                      <span className="prod-badge">{p.badge}</span>
+                    )}
+                    <button
+                      className={`wish-btn${wishlist.includes(p._id) ? " active" : ""}`}
+                      onClick={(e) => toggleWishlist(p._id, e)}
+                      aria-label="Wishlist"
+                    >
+                      {wishlist.includes(p._id) ? "❤️" : "🤍"}
+                    </button>
+                  </div>
+                  <div className="prod-info">
+                    <div className="prod-rating">
+                      <Stars rating={p.rating || 0} />
+                      <span className="prod-reviews">
+                        {p.rating} ({p.reviews} reviews)
+                      </span>
+                    </div>
+                    <div className="prod-name">{p.name}</div>
+                    <div className="prod-price">Rs{p.price}</div>
+                  </div>
+                </div>
+              )) : (
+                <div style={{ gridColumn: "span 3", textAlign: "center", padding: "60px 0", color: "#aaa", fontSize: 14 }}>
+                  No products found in this category yet.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── PAGINATION ── */}
+          {!loading && !error && (
+            <div className="pagination">
+              <button className="pg-btn arrow" onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  className={`pg-btn${page === n ? " active" : ""}`}
+                  onClick={() => setPage(n)}
+                >
+                  {n}
+                </button>
+              ))}
+              <span className="pg-dots">...</span>
               <button
-                key={n}
-                className={`pg-btn${page === n ? " active" : ""}`}
-                onClick={() => setPage(n)}
+                className={`pg-btn${page === 8 ? " active" : ""}`}
+                onClick={() => setPage(8)}
               >
-                {n}
+                8
               </button>
-            ))}
-            <span className="pg-dots">...</span>
-            <button
-              className={`pg-btn${page === 8 ? " active" : ""}`}
-              onClick={() => setPage(8)}
-            >
-              8
-            </button>
-            <button className="pg-btn arrow" onClick={() => setPage(p => Math.min(8, p + 1))}>›</button>
-          </div>
+              <button className="pg-btn arrow" onClick={() => setPage((p) => Math.min(8, p + 1))}>›</button>
+            </div>
+          )}
         </main>
       </div>
     </>

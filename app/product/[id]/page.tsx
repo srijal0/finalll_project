@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Header from "../../components/header";
-import { getProductById } from "../../data/products";
+import { productAPI } from "../../lib/api";
 import { useAuth } from "../../context/auth-context";
 import { useCart } from "../../context/cart-context";
 
@@ -21,31 +21,56 @@ export default function ProductPage() {
   const { user } = useAuth();
   const { addItem } = useCart();
   const id = params?.id as string;
-  const product = getProductById(id);
 
-  const [selectedType, setSelectedType] = useState(product?.types?.[0] ?? "");
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] ?? "");
+  // ── NEW: fetch product from MongoDB ──
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
 
-  if (!product) {
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    productAPI
+      .getById(id)
+      .then((res) => {
+        setProduct(res.product);
+        setSelectedType(res.product.types?.[0] ?? "");
+        setSelectedColor(res.product.colors?.[0] ?? "");
+      })
+      .catch(() => setError("Product not found."))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // ── LOADING ──
+  if (loading) {
+    return (
+      <>
+        <Header activePage="Shop" />
+        <div style={{ padding: "80px", textAlign: "center", color: "#888", fontFamily: "'Segoe UI', sans-serif" }}>
+          Loading product...
+        </div>
+      </>
+    );
+  }
+
+  // ── ERROR / NOT FOUND ──
+  if (error || !product) {
     return (
       <>
         <Header activePage="Shop" />
         <div style={{ padding: "60px 80px", fontFamily: "'Segoe UI', sans-serif" }}>
-          <p style={{ color: "#999", marginBottom: 16 }}>We couldn&apos;t find that product.</p>
+          <p style={{ color: "#999", marginBottom: 16 }}>
+            We couldn&apos;t find that product.
+          </p>
           <button
             onClick={() => router.push("/shop")}
-            style={{
-              background: "#2d4a2d",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 20px",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
+            style={{ background: "#2d4a2d", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
           >
             Back to Shop
           </button>
@@ -57,10 +82,10 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     addItem(
       {
-        id: product.id,
+        id: product._id,
         name: product.name,
-        img: product.img,
-        priceValue: product.priceValue,
+        img: product.images?.[0] || "/images/image1.png",
+        priceValue: product.price,
         selectedType,
         selectedColor,
       },
@@ -80,183 +105,44 @@ export default function ProductPage() {
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f3ef; color: #2d2d2d; }
 
-        .pd-page {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 32px 80px 80px;
-        }
-        .pd-back {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          color: #555;
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-          margin-bottom: 24px;
-        }
+        .pd-page { max-width: 1100px; margin: 0 auto; padding: 32px 80px 80px; }
+        .pd-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #555; background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 24px; }
         .pd-back:hover { color: #2d4a2d; }
 
-        .pd-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 48px;
-          align-items: start;
-        }
+        .pd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
 
-        .pd-img-wrap {
-          position: relative;
-          border-radius: 14px;
-          overflow: hidden;
-          background: #1c2b1c;
-        }
-        .pd-img {
-          width: 100%;
-          height: 460px;
-          object-fit: cover;
-          display: block;
-        }
-        .pd-wish {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          width: 38px; height: 38px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.92);
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 17px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-          transition: transform 0.15s;
-        }
+        .pd-img-main-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #1c2b1c; }
+        .pd-img { width: 100%; height: 460px; object-fit: cover; display: block; }
+        .pd-wish { position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: transform 0.15s; }
         .pd-wish:hover { transform: scale(1.08); }
 
-        .pd-name {
-          font-size: 32px;
-          font-weight: 800;
-          color: #1a1a1a;
-          margin-bottom: 10px;
-          line-height: 1.15;
-        }
-        .pd-rating {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 18px;
-          font-size: 13px;
-          color: #888;
-        }
-        .pd-price {
-          font-size: 24px;
-          font-weight: 700;
-          color: #1a1a1a;
-        }
-        .pd-tax-note {
-          font-size: 12px;
-          color: #999;
-          margin-top: 2px;
-          margin-bottom: 18px;
-        }
-        .pd-ship-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #e8f4ec;
-          color: #2d4a2d;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 6px 14px;
-          border-radius: 20px;
-          margin-bottom: 28px;
-        }
+        .pd-thumbnails { display: flex; gap: 8px; margin-top: 10px; }
+        .pd-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+        .pd-thumb.active { border-color: #2d4a2d; }
+
+        .pd-name { font-size: 32px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px; line-height: 1.15; }
+        .pd-rating { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 13px; color: #888; }
+        .pd-price { font-size: 24px; font-weight: 700; color: #1a1a1a; }
+        .pd-tax-note { font-size: 12px; color: #999; margin-top: 2px; margin-bottom: 18px; }
+        .pd-ship-badge { display: inline-flex; align-items: center; gap: 6px; background: #e8f4ec; color: #2d4a2d; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; margin-bottom: 28px; }
 
         .pd-field { margin-bottom: 22px; }
-        .pd-label {
-          font-size: 12px;
-          font-weight: 700;
-          color: #555;
-          margin-bottom: 8px;
-        }
-        .pd-select {
-          width: 100%;
-          max-width: 320px;
-          padding: 11px 14px;
-          font-size: 13px;
-          border: 1px solid #e0ddd4;
-          border-radius: 8px;
-          background: #fff;
-          color: #2d2d2d;
-          cursor: pointer;
-          appearance: none;
-          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-        }
+        .pd-label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 8px; }
+        .pd-select { width: 100%; max-width: 320px; padding: 11px 14px; font-size: 13px; border: 1px solid #e0ddd4; border-radius: 8px; background: #fff; color: #2d2d2d; cursor: pointer; appearance: none; }
 
-        .pd-qty {
-          display: inline-flex;
-          align-items: center;
-          border: 1px solid #e0ddd4;
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        .pd-qty-btn {
-          width: 38px; height: 38px;
-          background: #fff;
-          border: none;
-          font-size: 16px;
-          cursor: pointer;
-          color: #444;
-        }
+        .pd-qty { display: inline-flex; align-items: center; border: 1px solid #e0ddd4; border-radius: 8px; overflow: hidden; }
+        .pd-qty-btn { width: 38px; height: 38px; background: #fff; border: none; font-size: 16px; cursor: pointer; color: #444; }
         .pd-qty-btn:hover { background: #f0f7f2; color: #2d4a2d; }
-        .pd-qty-val {
-          width: 44px;
-          text-align: center;
-          font-size: 14px;
-          font-weight: 600;
-        }
+        .pd-qty-val { width: 44px; text-align: center; font-size: 14px; font-weight: 600; }
 
         .pd-colors { display: flex; gap: 10px; }
-        .pd-color-swatch {
-          width: 30px; height: 30px;
-          border-radius: 50%;
-          border: 2px solid transparent;
-          cursor: pointer;
-          padding: 0;
-          position: relative;
-        }
-        .pd-color-swatch.active {
-          border-color: #2d4a2d;
-          box-shadow: 0 0 0 2px #fff inset;
-        }
+        .pd-color-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+        .pd-color-swatch.active { border-color: #2d4a2d; box-shadow: 0 0 0 2px #fff inset; }
 
-        .pd-add-btn {
-          width: 100%;
-          max-width: 320px;
-          padding: 15px;
-          background: #1f3b22;
-          color: #fff;
-          border: none;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: background 0.15s;
-        }
+        .pd-add-btn { width: 100%; max-width: 320px; padding: 15px; background: #1f3b22; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
         .pd-add-btn:hover { background: #16291a; }
 
-        .pd-description {
-          margin-top: 30px;
-          font-size: 13px;
-          line-height: 1.6;
-          color: #666;
-          max-width: 420px;
-        }
+        .pd-description { margin-top: 30px; font-size: 13px; line-height: 1.6; color: #666; max-width: 420px; }
 
         @media (max-width: 900px) {
           .pd-page { padding: 24px 20px 60px; }
@@ -273,32 +159,55 @@ export default function ProductPage() {
         </button>
 
         <div className="pd-grid">
-          <div className="pd-img-wrap">
-            <img className="pd-img" src={product.img} alt={product.name} />
-            <button
-              className="pd-wish"
-              onClick={() => setWishlisted((w) => !w)}
-              aria-label="Wishlist"
-            >
-              {wishlisted ? "❤️" : "🤍"}
-            </button>
+          {/* LEFT: Images */}
+          <div>
+            <div className="pd-img-main-wrap">
+              <img
+                className="pd-img"
+                src={product.images?.[activeImg] || "/images/image1.png"}
+                alt={product.name}
+              />
+              <button
+                className="pd-wish"
+                onClick={() => setWishlisted((w) => !w)}
+                aria-label="Wishlist"
+              >
+                {wishlisted ? "❤️" : "🤍"}
+              </button>
+            </div>
+
+            {/* Thumbnails — only if multiple images */}
+            {product.images?.length > 1 && (
+              <div className="pd-thumbnails">
+                {product.images.map((img: string, i: number) => (
+                  <img
+                    key={i}
+                    className={`pd-thumb${activeImg === i ? " active" : ""}`}
+                    src={img}
+                    alt={`${product.name} ${i + 1}`}
+                    onClick={() => setActiveImg(i)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* RIGHT: Info */}
           <div>
             <h1 className="pd-name">{product.name}</h1>
             <div className="pd-rating">
-              <Stars rating={product.rating} />
-              <span>({product.reviews} reviews)</span>
+              <Stars rating={product.rating || 0} />
+              <span>({product.reviews || 0} reviews)</span>
             </div>
 
-            <div className="pd-price">{product.price}</div>
+            <div className="pd-price">Rs{product.price}</div>
             <div className="pd-tax-note">Local taxes included</div>
 
-            {product.shippingNote && (
-              <div className="pd-ship-badge">⚡ {product.shippingNote}</div>
+            {product.stock > 0 && (
+              <div className="pd-ship-badge">⚡ In Stock ({product.stock} left)</div>
             )}
 
-            {product.types && product.types.length > 0 && (
+            {product.types?.length > 0 && (
               <div className="pd-field">
                 <div className="pd-label">Types</div>
                 <select
@@ -306,10 +215,8 @@ export default function ProductPage() {
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
                 >
-                  {product.types.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
+                  {product.types.map((t: string) => (
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
@@ -318,29 +225,17 @@ export default function ProductPage() {
             <div className="pd-field">
               <div className="pd-label">Quantity</div>
               <div className="pd-qty">
-                <button
-                  className="pd-qty-btn"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="Decrease quantity"
-                >
-                  −
-                </button>
+                <button className="pd-qty-btn" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
                 <span className="pd-qty-val">{quantity}</span>
-                <button
-                  className="pd-qty-btn"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label="Increase quantity"
-                >
-                  +
-                </button>
+                <button className="pd-qty-btn" onClick={() => setQuantity((q) => q + 1)}>+</button>
               </div>
             </div>
 
-            {product.colors && product.colors.length > 0 && (
+            {product.colors?.length > 0 && (
               <div className="pd-field">
                 <div className="pd-label">Color</div>
                 <div className="pd-colors">
-                  {product.colors.map((c) => (
+                  {product.colors.map((c: string) => (
                     <button
                       key={c}
                       className={`pd-color-swatch${selectedColor === c ? " active" : ""}`}

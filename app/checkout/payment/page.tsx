@@ -9,10 +9,10 @@ type Method = "esewa" | "khalti" | "bank";
 
 const DELIVERY_FEE = 180;
 
-const METHODS: { id: Method; label: string; icon: string }[] = [
-  { id: "esewa", label: "esewa", icon: "✓" },
-  { id: "khalti", label: "Khalti", icon: "💳" },
-  { id: "bank", label: "Bank", icon: "🏦" },
+const METHODS: { id: Method; label: string; icon: string; isImage: boolean }[] = [
+  { id: "esewa",  label: "eSewa",         icon: "/images/image20.png",  isImage: true  },
+  { id: "khalti", label: "Khalti",        icon: "/images/image21.png", isImage: true  },
+  { id: "bank",   label: "Bank Transfer", icon: "🏦",                 isImage: false },
 ];
 
 export default function PaymentPage() {
@@ -20,8 +20,6 @@ export default function PaymentPage() {
   const { subtotal, itemCount } = useCart();
   const [selected, setSelected] = useState<Method>("esewa");
 
-  // subtotal already reflects the 15% shop discount baked into priceValue,
-  // so we back out the pre-discount total the same way the cart page does.
   const itemsTotal = Math.round(subtotal / 0.85);
   const discount = itemsTotal - subtotal;
   const shopTotal = subtotal;
@@ -101,17 +99,17 @@ export default function PaymentPage() {
           color: #1a1a1a;
         }
         .payment-option-icon {
-          width: 28px; height: 28px;
-          border-radius: 6px;
+          width: 40px; height: 40px;
+          border-radius: 8px;
           background: #f0efe9;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
+          font-size: 20px;
+          overflow: hidden;
         }
         .payment-option.selected .payment-option-icon {
-          background: #1f3b22;
-          color: #fff;
+          background: #e8f4ec;
         }
 
         .payment-note {
@@ -216,7 +214,20 @@ export default function PaymentPage() {
                   </span>
                   <span className="payment-option-label">{method.label}</span>
                 </div>
-                <span className="payment-option-icon">{method.icon}</span>
+
+                {/* ✅ FIXED: shows image or emoji correctly */}
+                <span className="payment-option-icon">
+                  {method.isImage ? (
+                    <img
+                      src={method.icon}
+                      alt={method.label}
+                      style={{ width: "32px", height: "32px", objectFit: "contain" }}
+                    />
+                  ) : (
+                    method.icon
+                  )}
+                </span>
+
               </div>
             ))}
 

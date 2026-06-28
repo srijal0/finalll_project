@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAddress } from "../context/address-context";
 import { CartItem } from "../context/cart-context";
@@ -22,221 +22,99 @@ function getDeliveryWindow() {
 }
 
 const TIMELINE = [
-  { label: "Delivered", done: false, current: false, showBar: false },
-  { label: "Out For Delivery", done: false, current: false, showBar: true },
-  { label: "In Transit", done: false, current: false, showBar: true },
-  { label: "Ready to Ship", done: false, current: false, showBar: true },
-  { label: "Packed", done: true, current: true, showBar: true },
-  { label: "Seller to Packed", done: true, current: false, showBar: true },
+  { label: "Delivered",       done: false, current: false, showBar: false },
+  { label: "Out For Delivery",done: false, current: false, showBar: true  },
+  { label: "In Transit",      done: false, current: false, showBar: true  },
+  { label: "Ready to Ship",   done: false, current: false, showBar: true  },
+  { label: "Packed",          done: true,  current: true,  showBar: true  },
+  { label: "Seller to Packed",done: true,  current: false, showBar: true  },
 ];
 
 export default function TrackOrderPage() {
   const router = useRouter();
   const { address } = useAddress();
 
-  const [order] = useState<StoredOrder | null>(() => {
+  // ✅ FIX: start as null, load in useEffect (not in useState initializer)
+  const [order, setOrder] = useState<StoredOrder | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem("ecohaven_last_order");
-      return raw ? JSON.parse(raw) : null;
+      if (raw) setOrder(JSON.parse(raw));
     } catch {
-      return null;
+      // ignore
     }
-  });
+    setMounted(true);
+  }, []);
 
   const firstItem = order?.items?.[0];
   const areaName = address.line?.split(",").pop()?.trim() || address.line;
+
+  // ✅ FIX: show loading until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <>
+        <header className="track-header" style={{ background: "#f4f3ef", borderBottom: "1px solid #ececE4", padding: "18px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={() => router.back()}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
+            <span style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>Track Order</span>
+          </div>
+        </header>
+        <div style={{ maxWidth: 600, margin: "0 auto", padding: "80px 24px", textAlign: "center", color: "#888", fontSize: 14 }}>
+          Loading order...
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <style>{`
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f3ef; color: #2d2d2d; }
-
-        .track-header {
-          background: #f4f3ef;
-          border-bottom: 1px solid #ececE4;
-          padding: 18px 32px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .track-header-left {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .track-back-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #1a1a1a;
-          display: flex;
-        }
-        .track-header-title {
-          font-size: 18px;
-          font-weight: 800;
-          color: #1a1a1a;
-        }
-        .track-header-nav {
-          display: flex;
-          align-items: center;
-          gap: 28px;
-          font-size: 13px;
-          color: #444;
-        }
-        .track-header-nav button {
-          background: none;
-          border: none;
-          font-size: 13px;
-          color: #444;
-          cursor: pointer;
-        }
+        .track-header { background: #f4f3ef; border-bottom: 1px solid #ececE4; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .track-header-left { display: flex; align-items: center; gap: 16px; }
+        .track-back-btn { background: none; border: none; cursor: pointer; color: #1a1a1a; display: flex; }
+        .track-header-title { font-size: 18px; font-weight: 800; color: #1a1a1a; }
+        .track-header-nav { display: flex; align-items: center; gap: 28px; font-size: 13px; color: #444; }
+        .track-header-nav button { background: none; border: none; font-size: 13px; color: #444; cursor: pointer; }
         .track-header-nav button:hover { color: #1f3b22; }
         .track-header-icons { display: flex; align-items: center; gap: 16px; }
-
-        .track-page {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 32px 24px 80px;
-        }
-
-        .track-status-card {
-          background: #fff;
-          border-radius: 16px;
-          border: 1px solid #ececE4;
-          display: flex;
-          gap: 20px;
-          padding: 16px;
-          margin-bottom: 24px;
-        }
-        .track-status-img {
-          width: 168px;
-          height: 168px;
-          border-radius: 12px;
-          object-fit: cover;
-          flex-shrink: 0;
-          background: #2f4a3a;
-        }
+        .track-page { max-width: 600px; margin: 0 auto; padding: 32px 24px 80px; }
+        .track-status-card { background: #fff; border-radius: 16px; border: 1px solid #ececE4; display: flex; gap: 20px; padding: 16px; margin-bottom: 24px; }
+        .track-status-img { width: 168px; height: 168px; border-radius: 12px; object-fit: cover; flex-shrink: 0; background: #2f4a3a; }
         .track-status-body { flex: 1; padding-top: 4px; }
-        .track-status-top {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-        }
-        .track-status-eyebrow {
-          font-size: 11px;
-          font-weight: 700;
-          color: #999;
-          letter-spacing: 0.5px;
-          margin-bottom: 4px;
-        }
-        .track-status-title {
-          font-size: 22px;
-          font-weight: 800;
-          color: #1a1a1a;
-        }
-        .track-status-badge {
-          background: #eef3da;
-          color: #5c6b2f;
-          font-size: 11px;
-          font-weight: 700;
-          padding: 4px 12px;
-          border-radius: 999px;
-          white-space: nowrap;
-        }
-        .track-status-eta {
-          font-size: 13px;
-          color: #555;
-          margin: 14px 0;
-        }
-        .track-status-divider {
-          height: 1px;
-          background: #ececE4;
-          margin: 14px 0;
-        }
-        .track-status-row {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          margin-bottom: 12px;
-        }
+        .track-status-top { display: flex; align-items: flex-start; justify-content: space-between; }
+        .track-status-eyebrow { font-size: 11px; font-weight: 700; color: #999; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .track-status-title { font-size: 22px; font-weight: 800; color: #1a1a1a; }
+        .track-status-badge { background: #eef3da; color: #5c6b2f; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
+        .track-status-eta { font-size: 13px; color: #555; margin: 14px 0; }
+        .track-status-divider { height: 1px; background: #ececE4; margin: 14px 0; }
+        .track-status-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
         .track-status-row:last-child { margin-bottom: 0; }
         .track-status-row svg { margin-top: 2px; flex-shrink: 0; color: #555; }
-        .track-status-row-label {
-          font-size: 11px;
-          color: #999;
-        }
-        .track-status-row-value {
-          font-size: 13px;
-          font-weight: 700;
-          color: #1a1a1a;
-        }
-
-        .track-timeline-card {
-          background: #fff;
-          border-radius: 16px;
-          border: 1px solid #ececE4;
-          padding: 24px;
-        }
-        .track-timeline-title {
-          font-size: 18px;
-          font-weight: 800;
-          color: #1a1a1a;
-          margin-bottom: 20px;
-        }
-        .track-timeline-item {
-          display: flex;
-          gap: 14px;
-          padding-bottom: 24px;
-        }
+        .track-status-row-label { font-size: 11px; color: #999; }
+        .track-status-row-value { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+        .track-timeline-card { background: #fff; border-radius: 16px; border: 1px solid #ececE4; padding: 24px; }
+        .track-timeline-title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 20px; }
+        .track-timeline-item { display: flex; gap: 14px; padding-bottom: 24px; }
         .track-timeline-item:last-child { padding-bottom: 0; }
-        .track-timeline-dot-col {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .track-timeline-dot {
-          width: 22px; height: 22px;
-          border-radius: 50%;
-          background: #e9e8e2;
-          flex-shrink: 0;
-        }
-        .track-timeline-dot.done {
-          background: #1f3b22;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-        }
-        .track-timeline-label {
-          font-size: 14px;
-          font-weight: 600;
-          color: #999;
-        }
+        .track-timeline-dot-col { display: flex; flex-direction: column; align-items: center; }
+        .track-timeline-dot { width: 22px; height: 22px; border-radius: 50%; background: #e9e8e2; flex-shrink: 0; }
+        .track-timeline-dot.done { background: #1f3b22; display: flex; align-items: center; justify-content: center; color: #fff; }
+        .track-timeline-label { font-size: 14px; font-weight: 600; color: #999; }
         .track-timeline-label.done { color: #1a1a1a; font-weight: 700; }
-        .track-timeline-sub {
-          font-size: 12px;
-          color: #aaa;
-          margin-top: 2px;
-        }
-        .track-timeline-bars {
-          display: flex;
-          gap: 6px;
-          margin-top: 8px;
-        }
-        .track-timeline-bar {
-          height: 5px;
-          border-radius: 3px;
-          background: #e9e8e2;
-        }
+        .track-timeline-sub { font-size: 12px; color: #aaa; margin-top: 2px; }
+        .track-timeline-bars { display: flex; gap: 6px; margin-top: 8px; }
+        .track-timeline-bar { height: 5px; border-radius: 3px; background: #e9e8e2; }
         .track-timeline-bar.filled { background: #c7c4b7; }
-
-        .track-empty {
-          text-align: center;
-          padding: 80px 0;
-          font-size: 14px;
-          color: #777;
-        }
+        .track-empty { text-align: center; padding: 80px 0; font-size: 14px; color: #777; }
       `}</style>
 
       <header className="track-header">
@@ -267,13 +145,22 @@ export default function TrackOrderPage() {
 
       <div className="track-page">
         {!order ? (
-          <div className="track-empty">No recent order found to track.</div>
+          <div className="track-empty">
+            No recent order found to track.
+            <br /><br />
+            <button
+              onClick={() => router.push("/orders")}
+              style={{ background: "#1f3b22", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              View My Orders
+            </button>
+          </div>
         ) : (
           <>
             <div className="track-status-card">
               <img
                 className="track-status-img"
-                src={firstItem?.img}
+                src={firstItem?.img || "/images/image1.png"}
                 alt={firstItem?.name || "Order item"}
               />
               <div className="track-status-body">
@@ -321,7 +208,6 @@ export default function TrackOrderPage() {
 
             <div className="track-timeline-card">
               <div className="track-timeline-title">Order Timeline</div>
-
               {TIMELINE.map((step) => (
                 <div className="track-timeline-item" key={step.label}>
                   <div className="track-timeline-dot-col">
@@ -334,20 +220,16 @@ export default function TrackOrderPage() {
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div className={`track-timeline-label ${step.done ? "done" : ""}`}>{step.label}</div>
+                    <div className={`track-timeline-label ${step.done ? "done" : ""}`}>
+                      {step.label}
+                    </div>
                     {step.label === "Delivered" && (
                       <div className="track-timeline-sub">Package delivered {areaName}</div>
                     )}
                     {step.showBar && (
                       <div className="track-timeline-bars">
-                        <div
-                          className={`track-timeline-bar ${step.done ? "filled" : ""}`}
-                          style={{ width: 60 }}
-                        />
-                        <div
-                          className={`track-timeline-bar ${step.done && !step.current ? "filled" : ""}`}
-                          style={{ width: 90 }}
-                        />
+                        <div className={`track-timeline-bar ${step.done ? "filled" : ""}`} style={{ width: 60 }} />
+                        <div className={`track-timeline-bar ${step.done && !step.current ? "filled" : ""}`} style={{ width: 90 }} />
                         {!step.current && <div className="track-timeline-bar" style={{ width: 50 }} />}
                       </div>
                     )}

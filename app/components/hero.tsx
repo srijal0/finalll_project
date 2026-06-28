@@ -6,26 +6,25 @@ const slides = [
     badge: "NEW ARRIVALS",
     title: "Ethical Essentials for a Conscious Home",
     desc: "Discover our curated collection of sustainable home goods, handcrafted jewelry, and eco-friendly accessories designed to last a lifetime.",
-    img: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80",
+    img: "/images/image1.png",
   },
   {
     badge: "BEST SELLERS",
     title: "Sustainable Living Starts Here",
     desc: "Shop our most loved products — crafted with care, made to endure, and gentle on the planet.",
-    img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+    img: "/images/image2.png",
   },
   {
     badge: "ECO FRIENDLY",
     title: "Good for You. Good for Earth.",
     desc: "Every product is thoughtfully sourced to reduce your footprint without compromising on quality or style.",
-    img: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&q=80",
+    img: "/images/image3.png",
   },
 ];
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
 
-  // Auto-advance every 4 seconds
   useEffect(() => {
     const t = setInterval(() => setCurrent((c) => (c + 1) % slides.length), 4000);
     return () => clearInterval(t);

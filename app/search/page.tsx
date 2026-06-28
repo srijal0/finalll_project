@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../components/header";
-import { allProducts } from "../data/products";
+import { productAPI } from "../lib/api";
 
 const recentSearches = ["Organic cotton", "Bamboo brush", "Linen bedding"];
 const trendingSearches = ["Recycled wool", "Eco candles", "Hemp blanket", "Reusable glass bottle"];
@@ -20,190 +20,71 @@ export default function SearchPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const trimmed = query.trim().toLowerCase();
+
+  // ✅ Fetch from MongoDB when query changes
+  useEffect(() => {
+    if (!trimmed) {
+      setResults([]);
+      return;
+    }
+    setLoading(true);
+    productAPI
+      .getAll({ search: trimmed })
+      .then((res) => setResults(res.products))
+      .catch(() => setResults([]))
+      .finally(() => setLoading(false));
+  }, [trimmed]);
 
   const toggleWishlist = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setWishlist((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setWishlist((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
-
-  const trimmed = query.trim().toLowerCase();
-  const results = trimmed
-    ? allProducts.filter(
-        (p) =>
-          p.name.toLowerCase().includes(trimmed) ||
-          p.category.toLowerCase().includes(trimmed)
-      )
-    : [];
 
   return (
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f3ef; color: #2d2d2d; }
-
-        .search-page {
-          min-height: calc(100vh - 60px);
-          padding: 48px 80px 80px;
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-
-        .search-input-wrap {
-          position: relative;
-          margin-bottom: 36px;
-        }
-        .search-input-icon {
-          position: absolute;
-          left: 18px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #9aa89a;
-          display: flex;
-        }
-        .search-input {
-          width: 100%;
-          padding: 16px 18px 16px 48px;
-          font-size: 16px;
-          border: 1px solid #e0ddd4;
-          border-radius: 10px;
-          background: #fff;
-          color: #1a1a1a;
-          outline: none;
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
+        .search-page { min-height: calc(100vh - 60px); padding: 48px 80px 80px; max-width: 1100px; margin: 0 auto; }
+        .search-input-wrap { position: relative; margin-bottom: 36px; }
+        .search-input-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #9aa89a; display: flex; }
+        .search-input { width: 100%; padding: 16px 18px 16px 48px; font-size: 16px; border: 1px solid #e0ddd4; border-radius: 10px; background: #fff; color: #1a1a1a; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
         .search-input::placeholder { color: #b3b0a6; }
-        .search-input:focus {
-          border-color: #4a7c59;
-          box-shadow: 0 0 0 3px rgba(74,124,89,0.12);
-        }
-        .search-clear {
-          position: absolute;
-          right: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: #aaa;
-          font-size: 18px;
-          cursor: pointer;
-          line-height: 1;
-          padding: 4px;
-        }
+        .search-input:focus { border-color: #4a7c59; box-shadow: 0 0 0 3px rgba(74,124,89,0.12); }
+        .search-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 4px; }
         .search-clear:hover { color: #555; }
-
         .suggest-section { margin-bottom: 32px; }
-        .suggest-label {
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 1.2px;
-          text-transform: uppercase;
-          color: #aaa;
-          margin-bottom: 14px;
-        }
-        .chip-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-        .chip {
-          background: #fff;
-          border: 1px solid #e6e4dc;
-          border-radius: 20px;
-          padding: 8px 16px;
-          font-size: 13px;
-          font-weight: 500;
-          color: #444;
-          cursor: pointer;
-          transition: border-color 0.15s, color 0.15s, background 0.15s;
-        }
-        .chip:hover {
-          border-color: #4a7c59;
-          color: #2d4a2d;
-          background: #f0f7f2;
-        }
-
-        .results-meta {
-          font-size: 13px;
-          color: #888;
-          margin-bottom: 20px;
-        }
+        .suggest-label { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #aaa; margin-bottom: 14px; }
+        .chip-row { display: flex; flex-wrap: wrap; gap: 10px; }
+        .chip { background: #fff; border: 1px solid #e6e4dc; border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 500; color: #444; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+        .chip:hover { border-color: #4a7c59; color: #2d4a2d; background: #f0f7f2; }
+        .results-meta { font-size: 13px; color: #888; margin-bottom: 20px; }
         .results-meta strong { color: #1a1a1a; font-weight: 700; }
-
-        .results-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 18px;
-        }
-        .prod-card {
-          background: #fff;
-          border-radius: 10px;
-          overflow: hidden;
-          transition: box-shadow 0.2s;
-          cursor: pointer;
-        }
+        .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .prod-card { background: #fff; border-radius: 10px; overflow: hidden; transition: box-shadow 0.2s; cursor: pointer; }
         .prod-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
         .prod-img-wrap { position: relative; overflow: hidden; }
-        .prod-img {
-          width: 100%;
-          height: 200px;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.35s;
-        }
+        .prod-img { width: 100%; height: 200px; object-fit: cover; display: block; transition: transform 0.35s; }
         .prod-card:hover .prod-img { transform: scale(1.04); }
-        .prod-badge {
-          position: absolute;
-          bottom: 10px;
-          left: 10px;
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 1px;
-          padding: 3px 8px;
-          border-radius: 3px;
-          color: #fff;
-          text-transform: uppercase;
-        }
-        .wish-btn {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.92);
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 15px;
-          transition: transform 0.2s;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-        }
+        .prod-badge { position: absolute; bottom: 10px; left: 10px; font-size: 9px; font-weight: 800; letter-spacing: 1px; padding: 3px 8px; border-radius: 3px; color: #fff; background: #4a7c59; text-transform: uppercase; }
+        .wish-btn { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .wish-btn:hover { transform: scale(1.1); }
         .prod-info { padding: 12px 14px 16px; }
-        .prod-rating {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin-bottom: 4px;
-        }
+        .prod-rating { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
         .prod-reviews { font-size: 11px; color: #aaa; }
         .prod-name { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 5px; }
         .prod-price { font-size: 15px; font-weight: 700; color: #2d4a2d; }
-
-        .no-results {
-          text-align: center;
-          padding: 70px 0;
-        }
+        .no-results { text-align: center; padding: 70px 0; }
         .no-results-icon { font-size: 34px; margin-bottom: 12px; }
-        .no-results-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #1a1a1a;
-          margin-bottom: 6px;
-        }
+        .no-results-title { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
         .no-results-sub { font-size: 13px; color: #999; }
-
+        .loading { text-align: center; padding: 60px 0; color: #888; font-size: 14px; }
         @media (max-width: 900px) {
           .search-page { padding: 32px 20px 60px; }
           .results-grid { grid-template-columns: repeat(2, 1fr); }
@@ -229,21 +110,18 @@ export default function SearchPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
           {query && (
-            <button className="search-clear" onClick={() => setQuery("")} aria-label="Clear search">
-              ✕
-            </button>
+            <button className="search-clear" onClick={() => setQuery("")} aria-label="Clear">✕</button>
           )}
         </div>
 
+        {/* No query — show suggestions */}
         {!trimmed && (
           <>
             <div className="suggest-section">
               <p className="suggest-label">Recent Searches</p>
               <div className="chip-row">
                 {recentSearches.map((s) => (
-                  <span key={s} className="chip" onClick={() => setQuery(s)}>
-                    {s}
-                  </span>
+                  <span key={s} className="chip" onClick={() => setQuery(s)}>{s}</span>
                 ))}
               </div>
             </div>
@@ -251,49 +129,56 @@ export default function SearchPage() {
               <p className="suggest-label">Trending</p>
               <div className="chip-row">
                 {trendingSearches.map((s) => (
-                  <span key={s} className="chip" onClick={() => setQuery(s)}>
-                    {s}
-                  </span>
+                  <span key={s} className="chip" onClick={() => setQuery(s)}>{s}</span>
                 ))}
               </div>
             </div>
           </>
         )}
 
-        {trimmed && (
+        {/* Loading */}
+        {trimmed && loading && (
+          <div className="loading">Searching...</div>
+        )}
+
+        {/* Results */}
+        {trimmed && !loading && (
           <>
             <p className="results-meta">
               <strong>{results.length}</strong> result{results.length !== 1 ? "s" : ""} for &ldquo;{query}&rdquo;
             </p>
-
             {results.length > 0 ? (
               <div className="results-grid">
                 {results.map((p) => (
-                  <div key={p.id} className="prod-card" onClick={() => router.push(`/product/${p.id}`)}>
+                  <div
+                    key={p._id}
+                    className="prod-card"
+                    onClick={() => router.push(`/product/${p._id}`)}
+                  >
                     <div className="prod-img-wrap">
-                      <img className="prod-img" src={p.img} alt={p.name} />
+                      <img
+                        className="prod-img"
+                        src={p.images?.[0] || "/images/image1.png"}
+                        alt={p.name}
+                      />
                       {p.badge && (
-                        <span className="prod-badge" style={{ background: p.badgeColor }}>
-                          {p.badge}
-                        </span>
+                        <span className="prod-badge">{p.badge}</span>
                       )}
                       <button
                         className="wish-btn"
-                        onClick={(e) => toggleWishlist(p.id, e)}
+                        onClick={(e) => toggleWishlist(p._id, e)}
                         aria-label="Wishlist"
                       >
-                        {wishlist.includes(p.id) ? "❤️" : "🤍"}
+                        {wishlist.includes(p._id) ? "❤️" : "🤍"}
                       </button>
                     </div>
                     <div className="prod-info">
                       <div className="prod-rating">
-                        <Stars rating={p.rating} />
-                        <span className="prod-reviews">
-                          {p.rating} ({p.reviews} reviews)
-                        </span>
+                        <Stars rating={p.rating || 0} />
+                        <span className="prod-reviews">{p.rating} ({p.reviews} reviews)</span>
                       </div>
                       <div className="prod-name">{p.name}</div>
-                      <div className="prod-price">{p.price}</div>
+                      <div className="prod-price">Rs{p.price}</div>
                     </div>
                   </div>
                 ))}

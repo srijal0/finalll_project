@@ -1,103 +1,111 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+// app/context/auth-context.tsx
+// Replace your existing auth-context.tsx with this file.
+// It connects to your Express backend instead of using localStorage only.
 
-interface StoredUser {
-  name: string;
-  email: string;
-  password: string;
-}
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { authAPI, User } from "../lib/api";
 
-interface CurrentUser {
-  name: string;
-  email: string;
-}
+const TOKEN_KEY = "ecohaven_token";
 
 interface AuthContextType {
-  user: CurrentUser | null;
+  user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  signup: (name: string, email: string, password: string) => { success: boolean; error?: string };
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  signup: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  updateProfile: (
+    data: Partial<User>
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const USERS_KEY = "ecohaven_users";
-const SESSION_KEY = "ecohaven_session";
-
-function getStoredUsers(): StoredUser[] {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // On mount: if token exists, fetch current user from backend
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {
-      // ignore corrupt session
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    authAPI
+      .getMe()
+      .then((res) => setUser(res.user))
+      .catch(() => localStorage.removeItem(TOKEN_KEY))
+      .finally(() => setLoading(false));
   }, []);
 
-  const login = (email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const users = getStoredUsers();
-    const match = users.find((u) => u.email === normalizedEmail);
-
-    if (!match) {
-      return { success: false, error: "No account found with this email." };
+  // ── LOGIN ──
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await authAPI.login(email, password);
+      localStorage.setItem(TOKEN_KEY, res.token);
+      setUser(res.user);
+      return { success: true };
+    } catch (err: unknown) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Login failed.",
+      };
     }
-    if (match.password !== password) {
-      return { success: false, error: "Incorrect password." };
-    }
-
-    const session = { name: match.name, email: match.email };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    setUser(session);
-    return { success: true };
   };
 
-  const signup = (name: string, email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const users = getStoredUsers();
-
-    if (users.some((u) => u.email === normalizedEmail)) {
-      return { success: false, error: "An account with this email already exists." };
+  // ── SIGNUP ──
+  const signup = async (name: string, email: string, password: string) => {
+    try {
+      const res = await authAPI.signup(name, email, password);
+      localStorage.setItem(TOKEN_KEY, res.token);
+      setUser(res.user);
+      return { success: true };
+    } catch (err: unknown) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Signup failed.",
+      };
     }
-    if (password.length < 6) {
-      return { success: false, error: "Password must be at least 6 characters." };
-    }
-
-    const newUser: StoredUser = { name: name.trim(), email: normalizedEmail, password };
-    users.push(newUser);
-    saveStoredUsers(users);
-
-    const session = { name: newUser.name, email: newUser.email };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    setUser(session);
-    return { success: true };
   };
 
+  // ── LOGOUT ──
   const logout = () => {
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
   };
 
+  // ── UPDATE PROFILE ──
+  const updateProfile = async (data: Partial<User>) => {
+    try {
+      const res = await authAPI.updateProfile(data);
+      setUser(res.user);
+      return { success: true };
+    } catch (err: unknown) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Update failed.",
+      };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, signup, logout, updateProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -105,6 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
