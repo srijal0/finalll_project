@@ -30,7 +30,7 @@ export default function AccountPage() {
       setAddressLine(
         (user as any).address?.line || address.line || "Siddharthanagar, Lumbini Province, Nepal"
       );
-      // ✅ Load saved avatar from MongoDB
+      
       if (user.avatar) setAvatar(user.avatar);
       setLoading(false);
     } else {
@@ -41,7 +41,7 @@ export default function AccountPage() {
     }
   }, [user, router, address]);
 
-  // ✅ UPDATED: uploads to backend /uploads folder
+ 
   const handleAvatar = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
