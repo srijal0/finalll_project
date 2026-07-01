@@ -1,7 +1,5 @@
 "use client";
-// app/context/auth-context.tsx
-// Replace your existing auth-context.tsx with this file.
-// It connects to your Express backend instead of using localStorage only.
+
 
 import {
   createContext,
@@ -52,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── LOGIN ──
+
   const login = async (email: string, password: string) => {
     try {
       const res = await authAPI.login(email, password);
@@ -67,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ── SIGNUP ──
+ 
   const signup = async (name: string, email: string, password: string) => {
     try {
       const res = await authAPI.signup(name, email, password);
@@ -82,13 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ── LOGOUT ──
+  
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
   };
 
-  // ── UPDATE PROFILE ──
+ 
   const updateProfile = async (data: Partial<User>) => {
     try {
       const res = await authAPI.updateProfile(data);
