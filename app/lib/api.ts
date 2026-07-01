@@ -19,7 +19,7 @@ function headers(auth = false): HeadersInit {
   return h;
 }
 
-// ─── Generic request wrapper ───
+
 async function request<T>(
   method: string,
   path: string,
@@ -41,9 +41,6 @@ async function request<T>(
   return data as T;
 }
 
-// ─────────────────────────────────────────────
-// AUTH ENDPOINTS  →  /api/auth/...
-// ─────────────────────────────────────────────
 
 export const authAPI = {
   // POST /api/auth/register
@@ -78,9 +75,7 @@ export const authAPI = {
     ),
 };
 
-// ─────────────────────────────────────────────
-// PRODUCT ENDPOINTS  →  /api/products/...
-// ─────────────────────────────────────────────
+
 
 export const productAPI = {
   // GET /api/products
