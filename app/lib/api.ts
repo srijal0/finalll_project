@@ -1,9 +1,6 @@
-// app/lib/api.ts
-// All API calls to your Express backend go through this file
-
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-// ─── Helper: get JWT token from localStorage ───
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("ecohaven_token");
@@ -98,9 +95,6 @@ export const productAPI = {
     request<{ products: Product[] }>("GET", "/products/featured"),
 };
 
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
 
 export interface User {
   _id: string;
@@ -113,7 +107,6 @@ export interface User {
   createdAt?: string;
 }
 
-// In app/lib/api.ts — update the Product interface
 export interface Product {
   _id: string;
   name: string;
@@ -131,7 +124,7 @@ export interface Product {
   colors?: string[];
   shippingNote?: string;
 }
-// Add this to api.ts after productAPI
+
 
 export const orderAPI = {
   // POST /api/orders — create order
@@ -175,7 +168,7 @@ export interface OrderRecord {
   paymentMethod: string;
   createdAt: string;
 }
-// Add this to app/lib/api.ts after authAPI
+
 
 export const addressAPI = {
   // Save address to user profile
@@ -192,7 +185,7 @@ export const addressAPI = {
       true
     ),
 };
-// Add this to api.ts
+
 export const uploadAPI = {
   uploadAvatar: async (file: File): Promise<{ url: string; user: User }> => {
     const formData = new FormData();
