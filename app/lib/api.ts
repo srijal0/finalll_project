@@ -6,7 +6,7 @@ function getToken(): string | null {
   return localStorage.getItem("ecohaven_token");
 }
 
-// ─── Helper: build headers ───
+
 function headers(auth = false): HeadersInit {
   const h: Record<string, string> = { "Content-Type": "application/json" };
   if (auth) {
@@ -48,14 +48,14 @@ export const authAPI = {
       password,
     }),
 
-  // POST /api/auth/login
+ 
   login: (email: string, password: string) =>
     request<{ token: string; user: User }>("POST", "/auth/login", {
       email,
       password,
     }),
 
-  // GET /api/auth/me  (requires JWT)
+ 
   getMe: () => request<{ user: User }>("GET", "/auth/me", undefined, true),
 
   // PUT /api/auth/profile  (requires JWT)
@@ -86,7 +86,7 @@ export const productAPI = {
     );
   },
 
-  // GET /api/products/:id
+
   getById: (id: string) =>
     request<{ product: Product }>("GET", `/products/${id}`),
 
