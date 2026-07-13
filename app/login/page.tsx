@@ -104,7 +104,7 @@ function LoginForm() {
         <div className="auth-card">
           <div
             className="auth-image"
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80')" }}
+            style={{ backgroundImage: "url('/images/image1.png')" }}
           />
           <div className="auth-form-col">
             <h1 className="auth-title">Login</h1>
