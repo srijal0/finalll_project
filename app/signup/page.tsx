@@ -104,7 +104,7 @@ function SignupForm() {
 
       <div className="auth-wrap">
         <div className="auth-card">
-          <div className="auth-image" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80')" }} />
+          <div className="auth-image" style={{ backgroundImage: "url('/images/image1.png')" }} />
           <div className="auth-form-col">
             <h1 className="auth-title">Sign Up</h1>
             <p className="auth-sub">Create an account to start shopping consciously.</p>
