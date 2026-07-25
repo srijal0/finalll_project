@@ -207,3 +207,70 @@ export const uploadAPI = {
     return data;
   },
 };
+
+// ── UPDATE the User interface ──
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  bio?: string;
+  avatar?: string;
+  role?: string; // ✅ ADD
+  createdAt?: string;
+}
+
+// ── UPDATE OrderRecord to include populated user ──
+export interface OrderRecord {
+  _id: string;
+  orderNumber: string;
+  user?: { _id: string; name: string; email: string } | string; // ✅ ADD
+  items: {
+    productId: string;
+    name: string;
+    img: string;
+    price: number;
+    quantity: number;
+    selectedType?: string;
+    selectedColor?: string;
+  }[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  status: string;
+  paymentMethod: string;
+  createdAt: string;
+}
+
+// ── ADD: admin API ──
+export const adminAPI = {
+  // Products
+  createProduct: (data: Partial<Product>) =>
+    request<{ product: Product }>("POST", "/products", data, true),
+
+  updateProduct: (id: string, data: Partial<Product>) =>
+    request<{ product: Product }>("PUT", `/products/${id}`, data, true),
+
+  deleteProduct: (id: string) =>
+    request<{ message: string }>("DELETE", `/products/${id}`, undefined, true),
+
+  // Orders
+  getAllOrders: () =>
+    request<{ orders: OrderRecord[] }>("GET", "/orders", undefined, true),
+
+  updateOrderStatus: (id: string, status: string) =>
+    request<{ order: OrderRecord }>(
+      "PUT",
+      `/orders/${id}/status`,
+      { status },
+      true
+    ),
+
+  // Users
+  getAllUsers: () =>
+    request<{ users: User[] }>("GET", "/users", undefined, true),
+
+  updateUserRole: (id: string, role: string) =>
+    request<{ user: User }>("PUT", `/users/${id}/role`, { role }, true),
+};

@@ -17,7 +17,6 @@ function LoginForm() {
 
   const redirectTo = searchParams?.get("redirect") || "/";
 
-  // ✅ FIXED: async + await login()
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -28,7 +27,7 @@ function LoginForm() {
     }
 
     setSubmitting(true);
-    const result = await login(email, password); // ✅ was missing await
+    const result = await login(email, password);
     setSubmitting(false);
 
     if (!result.success) {
@@ -36,7 +35,12 @@ function LoginForm() {
       return;
     }
 
-    router.push(redirectTo);
+    // ✅ role-based redirect
+    if (result.user?.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push(redirectTo);
+    }
   };
 
   return (
