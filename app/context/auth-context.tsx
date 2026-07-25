@@ -20,7 +20,7 @@ interface AuthContextType {
   login: (
     email: string,
     password: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; user?: User }>;
   signup: (
     name: string,
     email: string,
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authAPI.login(email, password);
       localStorage.setItem(TOKEN_KEY, res.token);
       setUser(res.user);
-      return { success: true };
+      return { success: true, user: res.user };
     } catch (err: unknown) {
       return {
         success: false,
